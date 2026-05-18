@@ -1,0 +1,31 @@
+# ── Secretos - NUNCA subir al repo ──────────────────────────
+.env.release
+*.pem
+*.key
+secrets/
+
+# ── Estos SÍ se suben (sin valores reales) ──────────────────
+# .env.dev   ← OK subir (valores de desarrollo)
+# .env.qa    ← OK subir (sin passwords reales)
+
+# ── Java / Maven ────────────────────────────────────────────
+gestor_pedidos/target/
+gestor_pedidos/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+!gestor_pedidos/target/*.jar
+
+# ── Node / React ─────────────────────────────────────────────
+Gestor-de-Pedidos-Portal/node_modules/
+Gestor-de-Pedidos-Portal/dist/
+Gestor-de-Pedidos-Portal/.env.local
+
+# ── Docker ───────────────────────────────────────────────────
+gestor_pedidos/logs/
+gestor_pedidos/backups/
+
+# ── IDE ──────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+*.swp

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="011-1" author="sergio" dbms="postgresql">
+        <comment>Garantizar que usuario1 exista y tenga cliente_id valido</comment>
+        <sql splitStatements="false">
+            -- Insertar si no existe
+            INSERT INTO usuario (username, password, nombre, rol, cliente_id)
+            SELECT 'usuario1', 'user123', 'Usuario Demo', 'USUARIO',
+                   (SELECT id FROM cliente ORDER BY id LIMIT 1)
+            WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE username = 'usuario1');
+
+            -- Reparar cliente_id si es NULL
+            UPDATE usuario
+            SET cliente_id = (SELECT id FROM cliente ORDER BY id LIMIT 1)
+            WHERE username = 'usuario1'
+              AND cliente_id IS NULL
+              AND EXISTS (SELECT 1 FROM cliente LIMIT 1);
+
+            -- Garantizar que admin exista
+            INSERT INTO usuario (username, password, nombre, rol)
+            SELECT 'admin', 'admin123', 'Administrador', 'ADMIN'
+            WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE username = 'admin');
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+</databaseChangeLog>

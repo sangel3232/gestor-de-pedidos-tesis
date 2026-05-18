@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="002-1" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            INSERT INTO cliente (nombre, email, ciudad, activo)
+            SELECT 'Ana Garcia',    'ana.garcia@mail.com',    'Madrid',    TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM cliente WHERE email = 'ana.garcia@mail.com');
+
+            INSERT INTO cliente (nombre, email, ciudad, activo)
+            SELECT 'Luis Perez',    'luis.perez@mail.com',    'Barcelona', TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM cliente WHERE email = 'luis.perez@mail.com');
+
+            INSERT INTO cliente (nombre, email, ciudad, activo)
+            SELECT 'Maria Lopez',   'maria.lopez@mail.com',   'Sevilla',   TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM cliente WHERE email = 'maria.lopez@mail.com');
+
+            INSERT INTO cliente (nombre, email, ciudad, activo)
+            SELECT 'Carlos Ruiz',   'carlos.ruiz@mail.com',   'Valencia',  TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM cliente WHERE email = 'carlos.ruiz@mail.com');
+
+            INSERT INTO cliente (nombre, email, ciudad, activo)
+            SELECT 'Sofia Martin',  'sofia.martin@mail.com',  'Bilbao',    TRUE
+            WHERE NOT EXISTS (SELECT 1 FROM cliente WHERE email = 'sofia.martin@mail.com');
+        </sql>
+        <rollback>
+            DELETE FROM cliente WHERE email IN (
+                'ana.garcia@mail.com','luis.perez@mail.com','maria.lopez@mail.com',
+                'carlos.ruiz@mail.com','sofia.martin@mail.com'
+            );
+        </rollback>
+    </changeSet>
+
+    <changeSet id="002-2" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            INSERT INTO pedido (descripcion, total, estado, fecha, cliente_id)
+            SELECT 'Laptop Dell XPS 15', 1299.99, 'PAGADO', NOW() - INTERVAL '10 days', id
+            FROM cliente WHERE email = 'ana.garcia@mail.com'
+            AND NOT EXISTS (SELECT 1 FROM pedido WHERE descripcion = 'Laptop Dell XPS 15');
+
+            INSERT INTO pedido (descripcion, total, estado, fecha, cliente_id)
+            SELECT 'Monitor LG 27', 349.50, 'CONFIRMADO', NOW() - INTERVAL '5 days', id
+            FROM cliente WHERE email = 'ana.garcia@mail.com'
+            AND NOT EXISTS (SELECT 1 FROM pedido WHERE descripcion = 'Monitor LG 27');
+
+            INSERT INTO pedido (descripcion, total, estado, fecha, cliente_id)
+            SELECT 'Teclado mecanico', 89.99, 'CREADO', NOW() - INTERVAL '2 days', id
+            FROM cliente WHERE email = 'luis.perez@mail.com'
+            AND NOT EXISTS (SELECT 1 FROM pedido WHERE descripcion = 'Teclado mecanico');
+
+            INSERT INTO pedido (descripcion, total, estado, fecha, cliente_id)
+            SELECT 'Silla ergonomica', 450.00, 'PAGADO', NOW() - INTERVAL '15 days', id
+            FROM cliente WHERE email = 'maria.lopez@mail.com'
+            AND NOT EXISTS (SELECT 1 FROM pedido WHERE descripcion = 'Silla ergonomica');
+
+            INSERT INTO pedido (descripcion, total, estado, fecha, cliente_id)
+            SELECT 'Auriculares Sony WH-1000', 279.00, 'CANCELADO', NOW() - INTERVAL '7 days', id
+            FROM cliente WHERE email = 'carlos.ruiz@mail.com'
+            AND NOT EXISTS (SELECT 1 FROM pedido WHERE descripcion = 'Auriculares Sony WH-1000');
+
+            INSERT INTO pedido (descripcion, total, estado, fecha, cliente_id)
+            SELECT 'Webcam Logitech 4K', 149.99, 'CREADO', NOW() - INTERVAL '1 day', id
+            FROM cliente WHERE email = 'sofia.martin@mail.com'
+            AND NOT EXISTS (SELECT 1 FROM pedido WHERE descripcion = 'Webcam Logitech 4K');
+        </sql>
+        <rollback>
+            DELETE FROM pedido WHERE descripcion IN (
+                'Laptop Dell XPS 15','Monitor LG 27','Teclado mecanico',
+                'Silla ergonomica','Auriculares Sony WH-1000','Webcam Logitech 4K'
+            );
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

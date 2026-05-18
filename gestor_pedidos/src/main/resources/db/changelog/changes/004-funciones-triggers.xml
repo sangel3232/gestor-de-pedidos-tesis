@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="004-1" author="sergio" dbms="postgresql" runOnChange="true">
+        <comment>Funcion auditoria pedido</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION fn_auditoria_pedido()
+            RETURNS TRIGGER AS $func$
+            BEGIN
+                IF (TG_OP = 'INSERT') THEN
+                    INSERT INTO pedido_auditoria(pedido_id,estado_anterior,estado_nuevo,total_anterior,total_nuevo,operacion,modificado_en)
+                    VALUES(NEW.id,NULL,NEW.estado::TEXT,NULL,NEW.total,'INSERT',NOW());
+                    RETURN NEW;
+                ELSIF (TG_OP = 'UPDATE') THEN
+                    IF OLD.estado IS DISTINCT FROM NEW.estado OR OLD.total IS DISTINCT FROM NEW.total THEN
+                        INSERT INTO pedido_auditoria(pedido_id,estado_anterior,estado_nuevo,total_anterior,total_nuevo,operacion,modificado_en)
+                        VALUES(NEW.id,OLD.estado::TEXT,NEW.estado::TEXT,OLD.total,NEW.total,'UPDATE',NOW());
+                    END IF;
+                    RETURN NEW;
+                ELSIF (TG_OP = 'DELETE') THEN
+                    INSERT INTO pedido_auditoria(pedido_id,estado_anterior,estado_nuevo,total_anterior,total_nuevo,operacion,modificado_en)
+                    VALUES(OLD.id,OLD.estado::TEXT,'ELIMINADO',OLD.total,NULL,'DELETE',NOW());
+                    RETURN OLD;
+                END IF;
+                RETURN NULL;
+            END;
+            $func$ LANGUAGE plpgsql;
+        </sql>
+        <rollback>DROP FUNCTION IF EXISTS fn_auditoria_pedido();</rollback>
+    </changeSet>
+
+    <changeSet id="004-2" author="sergio" dbms="postgresql">
+        <comment>Trigger auditoria pedido</comment>
+        <sql splitStatements="false">
+            DROP TRIGGER IF EXISTS trg_auditoria_pedido ON pedido;
+            CREATE TRIGGER trg_auditoria_pedido
+                AFTER INSERT OR UPDATE OR DELETE ON pedido
+                FOR EACH ROW EXECUTE FUNCTION fn_auditoria_pedido();
+        </sql>
+        <rollback>DROP TRIGGER IF EXISTS trg_auditoria_pedido ON pedido;</rollback>
+    </changeSet>
+
+    <changeSet id="004-3" author="sergio" dbms="postgresql" runOnChange="true">
+        <comment>Funcion auditoria cliente</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION fn_auditoria_cliente()
+            RETURNS TRIGGER AS $func$
+            BEGIN
+                IF (TG_OP = 'INSERT') THEN
+                    INSERT INTO cliente_auditoria(cliente_id,nombre_anterior,nombre_nuevo,email_anterior,email_nuevo,activo_anterior,activo_nuevo,operacion,modificado_en)
+                    VALUES(NEW.id,NULL,NEW.nombre,NULL,NEW.email,NULL,NEW.activo,'INSERT',NOW());
+                    RETURN NEW;
+                ELSIF (TG_OP = 'UPDATE') THEN
+                    INSERT INTO cliente_auditoria(cliente_id,nombre_anterior,nombre_nuevo,email_anterior,email_nuevo,activo_anterior,activo_nuevo,operacion,modificado_en)
+                    VALUES(NEW.id,OLD.nombre,NEW.nombre,OLD.email,NEW.email,OLD.activo,NEW.activo,'UPDATE',NOW());
+                    RETURN NEW;
+                ELSIF (TG_OP = 'DELETE') THEN
+                    INSERT INTO cliente_auditoria(cliente_id,nombre_anterior,nombre_nuevo,email_anterior,email_nuevo,activo_anterior,activo_nuevo,operacion,modificado_en)
+                    VALUES(OLD.id,OLD.nombre,NULL,OLD.email,NULL,OLD.activo,NULL,'DELETE',NOW());
+                    RETURN OLD;
+                END IF;
+                RETURN NULL;
+            END;
+            $func$ LANGUAGE plpgsql;
+        </sql>
+        <rollback>DROP FUNCTION IF EXISTS fn_auditoria_cliente();</rollback>
+    </changeSet>
+
+    <changeSet id="004-4" author="sergio" dbms="postgresql">
+        <comment>Trigger auditoria cliente</comment>
+        <sql splitStatements="false">
+            DROP TRIGGER IF EXISTS trg_auditoria_cliente ON cliente;
+            CREATE TRIGGER trg_auditoria_cliente
+                AFTER INSERT OR UPDATE OR DELETE ON cliente
+                FOR EACH ROW EXECUTE FUNCTION fn_auditoria_cliente();
+        </sql>
+        <rollback>DROP TRIGGER IF EXISTS trg_auditoria_cliente ON cliente;</rollback>
+    </changeSet>
+
+    <changeSet id="004-5" author="sergio" dbms="postgresql" runOnChange="true">
+        <comment>Funcion total facturado por cliente</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION fn_total_facturado_cliente(p_cliente_id BIGINT)
+            RETURNS NUMERIC(12,2) AS $func$
+            DECLARE v_total NUMERIC(12,2);
+            BEGIN
+                SELECT COALESCE(SUM(total),0) INTO v_total
+                FROM pedido WHERE cliente_id = p_cliente_id AND estado = 'PAGADO';
+                RETURN v_total;
+            END;
+            $func$ LANGUAGE plpgsql STABLE;
+        </sql>
+        <rollback>DROP FUNCTION IF EXISTS fn_total_facturado_cliente(BIGINT);</rollback>
+    </changeSet>
+
+    <changeSet id="004-6" author="sergio" dbms="postgresql" runOnChange="true">
+        <comment>Funcion validar transicion estado</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION fn_validar_transicion_estado()
+            RETURNS TRIGGER AS $func$
+            BEGIN
+                IF TG_OP = 'UPDATE' AND OLD.estado IS DISTINCT FROM NEW.estado THEN
+                    IF OLD.estado = 'PAGADO' THEN
+                        RAISE EXCEPTION 'Un pedido PAGADO no puede cambiar de estado';
+                    END IF;
+                    IF OLD.estado = 'CANCELADO' THEN
+                        RAISE EXCEPTION 'Un pedido CANCELADO no puede cambiar de estado';
+                    END IF;
+                    IF OLD.estado = 'CREADO' AND NEW.estado NOT IN ('CONFIRMADO','CANCELADO') THEN
+                        RAISE EXCEPTION 'Desde CREADO solo se puede pasar a CONFIRMADO o CANCELADO';
+                    END IF;
+                    IF OLD.estado = 'CONFIRMADO' AND NEW.estado NOT IN ('PAGADO','CANCELADO') THEN
+                        RAISE EXCEPTION 'Desde CONFIRMADO solo se puede pasar a PAGADO o CANCELADO';
+                    END IF;
+                END IF;
+                RETURN NEW;
+            END;
+            $func$ LANGUAGE plpgsql;
+        </sql>
+        <rollback>DROP FUNCTION IF EXISTS fn_validar_transicion_estado();</rollback>
+    </changeSet>
+
+    <changeSet id="004-7" author="sergio" dbms="postgresql">
+        <comment>Trigger validar estado pedido</comment>
+        <sql splitStatements="false">
+            DROP TRIGGER IF EXISTS trg_validar_estado_pedido ON pedido;
+            CREATE TRIGGER trg_validar_estado_pedido
+                BEFORE UPDATE ON pedido
+                FOR EACH ROW EXECUTE FUNCTION fn_validar_transicion_estado();
+        </sql>
+        <rollback>DROP TRIGGER IF EXISTS trg_validar_estado_pedido ON pedido;</rollback>
+    </changeSet>
+
+    <changeSet id="004-8" author="sergio" dbms="postgresql" runOnChange="true">
+        <comment>Funcion resumen pedidos</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION fn_resumen_pedidos()
+            RETURNS TABLE(estado TEXT, cantidad BIGINT, total_acumulado NUMERIC(12,2)) AS $func$
+            BEGIN
+                RETURN QUERY
+                SELECT p.estado::TEXT, COUNT(*)::BIGINT, COALESCE(SUM(p.total),0)::NUMERIC(12,2)
+                FROM pedido p GROUP BY p.estado ORDER BY p.estado;
+            END;
+            $func$ LANGUAGE plpgsql STABLE;
+        </sql>
+        <rollback>DROP FUNCTION IF EXISTS fn_resumen_pedidos();</rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="003-1" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            DO $body$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'operacion_auditoria') THEN
+                    CREATE TYPE operacion_auditoria AS ENUM ('INSERT','UPDATE','DELETE');
+                END IF;
+            END $body$;
+        </sql>
+        <rollback>DROP TYPE IF EXISTS operacion_auditoria;</rollback>
+    </changeSet>
+
+    <changeSet id="003-2" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS pedido_auditoria (
+                id              BIGSERIAL    PRIMARY KEY,
+                pedido_id       BIGINT       NOT NULL,
+                estado_anterior VARCHAR(20),
+                estado_nuevo    VARCHAR(20)  NOT NULL,
+                total_anterior  NUMERIC(12,2),
+                total_nuevo     NUMERIC(12,2),
+                operacion       VARCHAR(10)  NOT NULL,
+                modificado_en   TIMESTAMP    NOT NULL DEFAULT NOW(),
+                modificado_por  VARCHAR(100) DEFAULT 'system'
+            );
+        </sql>
+        <rollback>DROP TABLE IF EXISTS pedido_auditoria;</rollback>
+    </changeSet>
+
+    <changeSet id="003-3" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE INDEX IF NOT EXISTS idx_auditoria_pedido_id ON pedido_auditoria(pedido_id);
+            CREATE INDEX IF NOT EXISTS idx_auditoria_fecha     ON pedido_auditoria(modificado_en DESC);
+        </sql>
+        <rollback>
+            DROP INDEX IF EXISTS idx_auditoria_pedido_id;
+            DROP INDEX IF EXISTS idx_auditoria_fecha;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="003-4" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS cliente_auditoria (
+                id              BIGSERIAL    PRIMARY KEY,
+                cliente_id      BIGINT       NOT NULL,
+                nombre_anterior VARCHAR(100),
+                nombre_nuevo    VARCHAR(100),
+                email_anterior  VARCHAR(150),
+                email_nuevo     VARCHAR(150),
+                activo_anterior BOOLEAN,
+                activo_nuevo    BOOLEAN,
+                operacion       VARCHAR(10)  NOT NULL,
+                modificado_en   TIMESTAMP    NOT NULL DEFAULT NOW()
+            );
+        </sql>
+        <rollback>DROP TABLE IF EXISTS cliente_auditoria;</rollback>
+    </changeSet>
+
+</databaseChangeLog>

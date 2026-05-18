@@ -1,0 +1,65 @@
+version: "3.9"
+
+# ============================================================
+# DOCKER COMPOSE - AMBIENTE DEV
+# Uso: docker-compose -f docker-compose.dev.yml --env-file .env.dev up -d
+# ============================================================
+
+services:
+
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend_dev
+    restart: unless-stopped
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE:    ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL:     jdbc:postgresql://postgres-dev:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      PAGOS_PROVEEDOR:           ${PAGOS_PROVEEDOR}
+      STRIPE_API_KEY:            ${STRIPE_API_KEY}
+      CORS_ALLOWED_ORIGINS:      ${CORS_ALLOWED_ORIGINS}
+    volumes:
+      - ./logs/dev:/app/logs
+
+  frontend-dev:
+    build:
+      context: ../Gestor-de-Pedidos-Portal
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_ENV:          ${VITE_ENV}
+    container_name: frontend_dev
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend-dev
+
+volumes:
+  postgres_dev_data:

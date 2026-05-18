@@ -1,0 +1,65 @@
+version: "3.9"
+
+# ============================================================
+# DOCKER COMPOSE - AMBIENTE QA
+# Uso: docker-compose -f docker-compose.qa.yml --env-file .env.qa up -d
+# ============================================================
+
+services:
+
+  postgres-qa:
+    image: postgres:15-alpine
+    container_name: postgres_qa
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_qa_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-qa:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend_qa
+    restart: unless-stopped
+    depends_on:
+      postgres-qa:
+        condition: service_healthy
+    ports:
+      - "${SERVER_PORT:-8081}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE:     ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL:      jdbc:postgresql://postgres-qa:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      PAGOS_PROVEEDOR:            ${PAGOS_PROVEEDOR}
+      STRIPE_API_KEY:             ${STRIPE_API_KEY}
+      CORS_ALLOWED_ORIGINS:       ${CORS_ALLOWED_ORIGINS}
+    volumes:
+      - ./logs/qa:/app/logs
+
+  frontend-qa:
+    build:
+      context: ../Gestor-de-Pedidos-Portal
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_ENV:          ${VITE_ENV}
+    container_name: frontend_qa
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      - backend-qa
+
+volumes:
+  postgres_qa_data:

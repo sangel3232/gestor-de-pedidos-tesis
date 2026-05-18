@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <include file="db/changelog/changes/001-schema-inicial.xml"/>
+    <include file="db/changelog/changes/002-inserts-datos.xml"/>
+    <include file="db/changelog/changes/003-auditoria-tabla.xml"/>
+    <include file="db/changelog/changes/004-funciones-triggers.xml"/>
+    <include file="db/changelog/changes/005-carrito-pago.xml"/>
+    <include file="db/changelog/changes/006-usuarios.xml"/>
+    <include file="db/changelog/changes/007-fix-enum-columns.xml"/>
+    <include file="db/changelog/changes/008-pedido-metadata.xml"/>
+    <include file="db/changelog/changes/008-reembolso.xml"/>
+    <include file="db/changelog/changes/010-nuevos-estados.xml"/>
+    <include file="db/changelog/changes/011-fix-usuario-demo.xml"/>
+
+</databaseChangeLog>

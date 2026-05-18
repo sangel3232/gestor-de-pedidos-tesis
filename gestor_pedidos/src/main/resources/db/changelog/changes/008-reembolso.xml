@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================================
+         009 - Soporte de reembolso: PAGADO -> REEMBOLSADO
+         ============================================================ -->
+
+    <changeSet id="009-1" author="sergio" dbms="postgresql" runOnChange="true">
+        <comment>Actualizar trigger para permitir PAGADO a REEMBOLSADO</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION fn_validar_transicion_estado()
+            RETURNS TRIGGER AS $func$
+            BEGIN
+                IF TG_OP = 'UPDATE' AND OLD.estado IS DISTINCT FROM NEW.estado THEN
+                    IF OLD.estado = 'CANCELADO' THEN
+                        RAISE EXCEPTION 'Un pedido CANCELADO no puede cambiar de estado';
+                    END IF;
+                    IF OLD.estado = 'REEMBOLSADO' THEN
+                        RAISE EXCEPTION 'Un pedido REEMBOLSADO no puede cambiar de estado';
+                    END IF;
+                    IF OLD.estado = 'PAGADO' AND NEW.estado NOT IN ('REEMBOLSADO') THEN
+                        RAISE EXCEPTION 'Desde PAGADO solo se puede pasar a REEMBOLSADO';
+                    END IF;
+                    IF OLD.estado = 'CREADO' AND NEW.estado NOT IN ('CONFIRMADO','CANCELADO') THEN
+                        RAISE EXCEPTION 'Desde CREADO solo se puede pasar a CONFIRMADO o CANCELADO';
+                    END IF;
+                    IF OLD.estado = 'CONFIRMADO' AND NEW.estado NOT IN ('PAGADO','CANCELADO') THEN
+                        RAISE EXCEPTION 'Desde CONFIRMADO solo se puede pasar a PAGADO o CANCELADO';
+                    END IF;
+                END IF;
+                RETURN NEW;
+            END;
+            $func$ LANGUAGE plpgsql;
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="005-1" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            DO $body$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_carrito') THEN
+                    CREATE TYPE estado_carrito AS ENUM ('ACTIVO','PROCESANDO','COMPLETADO','ABANDONADO');
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_pago') THEN
+                    CREATE TYPE estado_pago AS ENUM ('PENDIENTE','COMPLETADO','FALLIDO','REEMBOLSADO');
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'metodo_pago') THEN
+                    CREATE TYPE metodo_pago AS ENUM ('TARJETA_CREDITO','TARJETA_DEBITO','TRANSFERENCIA','EFECTIVO');
+                END IF;
+            END $body$;
+        </sql>
+        <rollback>
+            DROP TYPE IF EXISTS estado_carrito;
+            DROP TYPE IF EXISTS estado_pago;
+            DROP TYPE IF EXISTS metodo_pago;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="005-2" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS producto (
+                id          BIGSERIAL     PRIMARY KEY,
+                nombre      VARCHAR(150)  NOT NULL,
+                descripcion VARCHAR(500),
+                precio      NUMERIC(12,2) NOT NULL,
+                stock       INTEGER       NOT NULL DEFAULT 0,
+                activo      BOOLEAN       NOT NULL DEFAULT TRUE,
+                creado_en   TIMESTAMP     NOT NULL DEFAULT NOW()
+            );
+        </sql>
+        <rollback>DROP TABLE IF EXISTS producto;</rollback>
+    </changeSet>
+
+    <changeSet id="005-3" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS carrito (
+                id         BIGSERIAL    PRIMARY KEY,
+                cliente_id BIGINT       NOT NULL,
+                estado     VARCHAR(20)  NOT NULL DEFAULT 'ACTIVO',
+                creado_en  TIMESTAMP    NOT NULL DEFAULT NOW(),
+                CONSTRAINT fk_carrito_cliente FOREIGN KEY (cliente_id) REFERENCES cliente(id) ON DELETE RESTRICT
+            );
+        </sql>
+        <rollback>DROP TABLE IF EXISTS carrito;</rollback>
+    </changeSet>
+
+    <changeSet id="005-4" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS carrito_item (
+                id              BIGSERIAL     PRIMARY KEY,
+                carrito_id      BIGINT        NOT NULL,
+                producto_id     BIGINT        NOT NULL,
+                cantidad        INTEGER       NOT NULL,
+                precio_unitario NUMERIC(12,2) NOT NULL,
+                CONSTRAINT fk_item_carrito  FOREIGN KEY (carrito_id)  REFERENCES carrito(id),
+                CONSTRAINT fk_item_producto FOREIGN KEY (producto_id) REFERENCES producto(id)
+            );
+        </sql>
+        <rollback>DROP TABLE IF EXISTS carrito_item;</rollback>
+    </changeSet>
+
+    <changeSet id="005-5" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS pago (
+                id                 BIGSERIAL     PRIMARY KEY,
+                pedido_id          BIGINT        NOT NULL UNIQUE,
+                monto              NUMERIC(12,2) NOT NULL,
+                estado             VARCHAR(20)   NOT NULL DEFAULT 'PENDIENTE',
+                metodo_pago        VARCHAR(30)   NOT NULL,
+                referencia_externa VARCHAR(100),
+                mensaje_respuesta  VARCHAR(255),
+                creado_en          TIMESTAMP     NOT NULL DEFAULT NOW(),
+                procesado_en       TIMESTAMP,
+                CONSTRAINT fk_pago_pedido FOREIGN KEY (pedido_id) REFERENCES pedido(id) ON DELETE RESTRICT
+            );
+        </sql>
+        <rollback>DROP TABLE IF EXISTS pago;</rollback>
+    </changeSet>
+
+    <changeSet id="005-6" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            CREATE INDEX IF NOT EXISTS idx_carrito_cliente_estado ON carrito(cliente_id, estado);
+            CREATE INDEX IF NOT EXISTS idx_carrito_item_carrito   ON carrito_item(carrito_id);
+            CREATE INDEX IF NOT EXISTS idx_pago_pedido            ON pago(pedido_id);
+            CREATE INDEX IF NOT EXISTS idx_pago_estado            ON pago(estado);
+        </sql>
+        <rollback>
+            DROP INDEX IF EXISTS idx_carrito_cliente_estado;
+            DROP INDEX IF EXISTS idx_carrito_item_carrito;
+            DROP INDEX IF EXISTS idx_pago_pedido;
+            DROP INDEX IF EXISTS idx_pago_estado;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="005-7" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            INSERT INTO producto (nombre, descripcion, precio, stock)
+            SELECT 'Laptop Pro 15', 'Laptop de alto rendimiento con 16GB RAM', 1299.99, 20
+            WHERE NOT EXISTS (SELECT 1 FROM producto WHERE nombre = 'Laptop Pro 15');
+
+            INSERT INTO producto (nombre, descripcion, precio, stock)
+            SELECT 'Mouse Inalambrico', 'Mouse ergonomico con bateria recargable', 29.99, 100
+            WHERE NOT EXISTS (SELECT 1 FROM producto WHERE nombre = 'Mouse Inalambrico');
+
+            INSERT INTO producto (nombre, descripcion, precio, stock)
+            SELECT 'Teclado Mecanico', 'Teclado mecanico RGB retroiluminado', 89.99, 50
+            WHERE NOT EXISTS (SELECT 1 FROM producto WHERE nombre = 'Teclado Mecanico');
+
+            INSERT INTO producto (nombre, descripcion, precio, stock)
+            SELECT 'Monitor 27 pulgadas', 'Monitor 4K IPS con 144Hz', 449.99, 15
+            WHERE NOT EXISTS (SELECT 1 FROM producto WHERE nombre = 'Monitor 27 pulgadas');
+
+            INSERT INTO producto (nombre, descripcion, precio, stock)
+            SELECT 'Auriculares Bluetooth', 'Auriculares con cancelacion de ruido activa', 149.99, 35
+            WHERE NOT EXISTS (SELECT 1 FROM producto WHERE nombre = 'Auriculares Bluetooth');
+        </sql>
+        <rollback>DELETE FROM producto;</rollback>
+    </changeSet>
+
+</databaseChangeLog>

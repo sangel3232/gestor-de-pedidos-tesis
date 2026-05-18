@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================================
+         007 - Convertir columnas ENUM nativo a VARCHAR
+               Solo actua si la columna aun es de tipo ENUM nativo
+         ============================================================ -->
+
+    <changeSet id="007-1" author="sergio" dbms="postgresql">
+        <comment>Convertir carrito.estado a VARCHAR si es tipo ENUM nativo</comment>
+        <sql splitStatements="false">
+            DO $body$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'carrito'
+                      AND column_name = 'estado'
+                      AND udt_name = 'estado_carrito'
+                ) THEN
+                    ALTER TABLE carrito ALTER COLUMN estado TYPE VARCHAR(20) USING estado::VARCHAR;
+                END IF;
+            END $body$;
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+    <changeSet id="007-2" author="sergio" dbms="postgresql">
+        <comment>Convertir pago.estado a VARCHAR si es tipo ENUM nativo</comment>
+        <sql splitStatements="false">
+            DO $body$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'pago'
+                      AND column_name = 'estado'
+                      AND udt_name = 'estado_pago'
+                ) THEN
+                    ALTER TABLE pago ALTER COLUMN estado TYPE VARCHAR(20) USING estado::VARCHAR;
+                END IF;
+            END $body$;
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+    <changeSet id="007-3" author="sergio" dbms="postgresql">
+        <comment>Convertir pago.metodo_pago a VARCHAR si es tipo ENUM nativo</comment>
+        <sql splitStatements="false">
+            DO $body$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'pago'
+                      AND column_name = 'metodo_pago'
+                      AND udt_name = 'metodo_pago'
+                ) THEN
+                    ALTER TABLE pago ALTER COLUMN metodo_pago TYPE VARCHAR(30) USING metodo_pago::VARCHAR;
+                END IF;
+            END $body$;
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+    <changeSet id="007-4" author="sergio" dbms="postgresql">
+        <comment>Convertir usuario.rol a VARCHAR si es tipo ENUM nativo</comment>
+        <sql splitStatements="false">
+            DO $body$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'usuario'
+                      AND column_name = 'rol'
+                      AND udt_name = 'rol_usuario'
+                ) THEN
+                    ALTER TABLE usuario ALTER COLUMN rol TYPE VARCHAR(10) USING rol::VARCHAR;
+                END IF;
+            END $body$;
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+    <changeSet id="007-5" author="sergio" dbms="postgresql">
+        <comment>Convertir pedido.estado a VARCHAR si es tipo ENUM nativo</comment>
+        <sql splitStatements="false">
+            DO $body$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'pedido'
+                      AND column_name = 'estado'
+                      AND udt_name = 'estado_pedido'
+                ) THEN
+                    -- Desactivar triggers temporalmente para el ALTER
+                    ALTER TABLE pedido DISABLE TRIGGER ALL;
+                    ALTER TABLE pedido ALTER COLUMN estado TYPE VARCHAR(20) USING estado::VARCHAR;
+                    ALTER TABLE pedido ENABLE TRIGGER ALL;
+                END IF;
+            END $body$;
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+</databaseChangeLog>

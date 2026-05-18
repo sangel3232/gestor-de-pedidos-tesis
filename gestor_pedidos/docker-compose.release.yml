@@ -1,0 +1,67 @@
+version: "3.9"
+
+# ============================================================
+# DOCKER COMPOSE - AMBIENTE RELEASE (produccion)
+# Uso: docker-compose -f docker-compose.release.yml --env-file .env.release up -d
+# ============================================================
+
+services:
+
+  postgres-prod:
+    image: postgres:15-alpine
+    container_name: postgres_prod
+    restart: always
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend-prod:
+    image: gestor-pedidos-backend:${IMAGE_TAG:-latest}
+    container_name: backend_prod
+    restart: always
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE:     ${SPRING_PROFILES_ACTIVE}
+      SPRING_DATASOURCE_URL:      jdbc:postgresql://postgres-prod:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      PAGOS_PROVEEDOR:            ${PAGOS_PROVEEDOR}
+      STRIPE_API_KEY:             ${STRIPE_API_KEY}
+      STRIPE_CURRENCY:            ${STRIPE_CURRENCY}
+      CORS_ALLOWED_ORIGINS:       ${CORS_ALLOWED_ORIGINS}
+    volumes:
+      - ./logs/prod:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  frontend-prod:
+    image: gestor-pedidos-frontend:${IMAGE_TAG:-latest}
+    container_name: frontend_prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend-prod
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+
+volumes:
+  postgres_prod_data:

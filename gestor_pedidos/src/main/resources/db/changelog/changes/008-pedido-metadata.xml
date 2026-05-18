@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="008-1" author="sergio" dbms="postgresql">
+        <sql splitStatements="false">
+            ALTER TABLE pedido
+                ADD COLUMN IF NOT EXISTS ciudad_destino VARCHAR(100),
+                ADD COLUMN IF NOT EXISTS direccion_entrega VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS observacion_cancelacion VARCHAR(500),
+                ADD COLUMN IF NOT EXISTS actualizado_en TIMESTAMP;
+        </sql>
+        <rollback>
+            ALTER TABLE pedido
+                DROP COLUMN IF EXISTS actualizado_en,
+                DROP COLUMN IF EXISTS observacion_cancelacion,
+                DROP COLUMN IF EXISTS direccion_entrega,
+                DROP COLUMN IF EXISTS ciudad_destino;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

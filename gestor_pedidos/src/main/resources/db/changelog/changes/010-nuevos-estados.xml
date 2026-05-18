@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================================
+         010 - Nuevos estados: EN_CAMINO, ENTREGADO
+               Actualiza trigger de transiciones
+         ============================================================ -->
+
+    <changeSet id="010-1" author="sergio" dbms="postgresql" runOnChange="true">
+        <comment>Actualizar trigger para incluir EN_CAMINO y ENTREGADO</comment>
+        <sql splitStatements="false">
+            CREATE OR REPLACE FUNCTION fn_validar_transicion_estado()
+            RETURNS TRIGGER AS $func$
+            BEGIN
+                IF TG_OP = 'UPDATE' AND OLD.estado IS DISTINCT FROM NEW.estado THEN
+                    IF OLD.estado IN ('CANCELADO','REEMBOLSADO','ENTREGADO') THEN
+                        RAISE EXCEPTION 'Un pedido en estado % no puede cambiar de estado', OLD.estado;
+                    END IF;
+                    IF OLD.estado = 'CREADO' AND NEW.estado NOT IN ('CONFIRMADO','CANCELADO') THEN
+                        RAISE EXCEPTION 'Desde CREADO solo se puede pasar a CONFIRMADO o CANCELADO';
+                    END IF;
+                    IF OLD.estado = 'CONFIRMADO' AND NEW.estado NOT IN ('PAGADO','CANCELADO') THEN
+                        RAISE EXCEPTION 'Desde CONFIRMADO solo se puede pasar a PAGADO o CANCELADO';
+                    END IF;
+                    IF OLD.estado = 'PAGADO' AND NEW.estado NOT IN ('EN_CAMINO','REEMBOLSADO') THEN
+                        RAISE EXCEPTION 'Desde PAGADO solo se puede pasar a EN_CAMINO o REEMBOLSADO';
+                    END IF;
+                    IF OLD.estado = 'EN_CAMINO' AND NEW.estado NOT IN ('ENTREGADO') THEN
+                        RAISE EXCEPTION 'Desde EN_CAMINO solo se puede pasar a ENTREGADO';
+                    END IF;
+                END IF;
+                RETURN NEW;
+            END;
+            $func$ LANGUAGE plpgsql;
+        </sql>
+        <rollback><sql>SELECT 1;</sql></rollback>
+    </changeSet>
+
+</databaseChangeLog>
