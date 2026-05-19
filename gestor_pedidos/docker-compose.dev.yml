@@ -48,6 +48,8 @@ services:
     restart: unless-stopped
     ports:
       - "5174:80"
+    environment:
+      - VITE_API_BASE_URL=http://3.129.13.116:8081
     depends_on:
       - backend-dev
 

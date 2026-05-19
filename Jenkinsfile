@@ -113,8 +113,8 @@ pipeline {
                         def apiUrl = params.DEPLOY_ENV == 'release'
                             ? 'https://api.gestor-pedidos.com'
                             : params.DEPLOY_ENV == 'qa'
-                                ? 'http://qa.gestor-pedidos.com:8081'
-                                : "http://${env.EC2_DEV_HOST ?: 'localhost'}:8080"
+                                ? 'http://3.129.13.116:8082'
+                                : 'http://3.129.13.116:8081'
                         sh """
                             docker build \
                                 --build-arg VITE_API_BASE_URL=${apiUrl} \
