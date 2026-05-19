@@ -87,7 +87,7 @@ pipeline {
                 echo "=== Compilando React/Vite ==="
                 dir("${FRONTEND_DIR}") {
                     sh '''
-                        npm ci --silent
+                        npm ci
                         npm run build
                     '''
                 }
