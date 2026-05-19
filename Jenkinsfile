@@ -12,7 +12,7 @@ pipeline {
         APP_NAME        = "gestor-pedidos"
         BACKEND_DIR     = "gestor_pedidos"
         FRONTEND_DIR    = "Gestor-de-Pedidos-Portal"
-        DOCKER_REGISTRY = "${env.DOCKER_REGISTRY ?: 'tu-usuario-dockerhub'}"
+        DOCKER_REGISTRY = "${env.DOCKER_REGISTRY ?: 'sangel3232'}"
         IMAGE_BACKEND   = "${DOCKER_REGISTRY}/${APP_NAME}-backend"
         IMAGE_FRONTEND  = "${DOCKER_REGISTRY}/${APP_NAME}-frontend"
         IMAGE_TAG       = "${env.BUILD_NUMBER}-${env.GIT_COMMIT?.take(7) ?: 'local'}"
