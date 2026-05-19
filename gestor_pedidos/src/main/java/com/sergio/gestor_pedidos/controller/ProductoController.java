@@ -47,6 +47,11 @@ public class ProductoController {
         return productoService.filtrar(nombre, precioMin, precioMax, soloConStock);
     }
 
+    @GetMapping("/categoria/{categoriaId}")
+    public List<ProductoResponseDTO> porCategoria(@PathVariable Long categoriaId) {
+        return productoService.filtrarPorCategoria(categoriaId);
+    }
+
     @PutMapping("/{id}")
     public ProductoResponseDTO actualizar(@PathVariable Long id, @Valid @RequestBody ProductoRequestDTO dto) {
         return productoService.actualizar(id, dto);

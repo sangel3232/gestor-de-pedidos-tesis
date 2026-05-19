@@ -7,7 +7,8 @@ const LINKS = [
   { to: "/admin/clientes",   label: "Clientes" },
   { to: "/admin/pedidos",    label: "Pedidos" },
   { to: "/admin/pagos",      label: "Pagos" },
-  { to: "/admin/facturas",   label: "Facturas" },
+  { to: "/admin/facturas",    label: "Facturas" },
+  { to: "/admin/categorias", label: "Categorías" },
 ];
 
 export default function NavbarAdmin() {

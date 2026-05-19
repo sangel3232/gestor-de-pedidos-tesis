@@ -18,6 +18,8 @@ public class ProductoRequestDTO {
     @Size(max = 500)
     private String imagenUrl;
 
+    private Long categoriaId;
+
     @NotNull(message = "El precio es obligatorio")
     @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor a 0")
     private BigDecimal precio;

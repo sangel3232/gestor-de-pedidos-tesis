@@ -13,6 +13,9 @@ public class ProductoResponseDTO {
     private String nombre;
     private String descripcion;
     private String imagenUrl;
+    private Long categoriaId;
+    private String categoriaNombre;
+    private String categoriaIcono;
     private BigDecimal precio;
     private Integer stock;
     private Boolean activo;

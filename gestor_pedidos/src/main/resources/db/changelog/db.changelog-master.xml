@@ -19,5 +19,6 @@
     <include file="db/changelog/changes/012-producto-imagen.xml"/>
     <include file="db/changelog/changes/013-factura.xml"/>
     <include file="db/changelog/changes/014-productos-electronicos.xml"/>
+    <include file="db/changelog/changes/015-categorias.xml"/>
 
 </databaseChangeLog>

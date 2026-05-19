@@ -4,7 +4,9 @@ import com.sergio.gestor_pedidos.dto.ProductoRequestDTO;
 import com.sergio.gestor_pedidos.dto.ProductoResponseDTO;
 import com.sergio.gestor_pedidos.exception.RecursoNoEncontradoException;
 import com.sergio.gestor_pedidos.mapper.ProductoMapper;
+import com.sergio.gestor_pedidos.model.CategoriaProducto;
 import com.sergio.gestor_pedidos.model.Producto;
+import com.sergio.gestor_pedidos.repository.CategoriaRepository;
 import com.sergio.gestor_pedidos.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,11 +20,13 @@ import java.util.List;
 public class ProductoService {
 
     private final ProductoRepository productoRepository;
+    private final CategoriaRepository categoriaRepository;
     private final ProductoMapper productoMapper;
 
     @Transactional
     public ProductoResponseDTO crear(ProductoRequestDTO dto) {
         Producto producto = productoMapper.toEntity(dto);
+        asignarCategoria(producto, dto.getCategoriaId());
         return productoMapper.toResponse(productoRepository.save(producto));
     }
 
@@ -46,6 +50,12 @@ public class ProductoService {
                 .map(productoMapper::toResponse).toList();
     }
 
+    public List<ProductoResponseDTO> filtrarPorCategoria(Long categoriaId) {
+        return productoRepository.findByActivoTrue().stream()
+                .filter(p -> p.getCategoria() != null && p.getCategoria().getId().equals(categoriaId))
+                .map(productoMapper::toResponse).toList();
+    }
+
     @Transactional
     public ProductoResponseDTO actualizar(Long id, ProductoRequestDTO dto) {
         Producto producto = buscarOFallar(id);
@@ -54,6 +64,7 @@ public class ProductoService {
         producto.setImagenUrl(dto.getImagenUrl());
         producto.setPrecio(dto.getPrecio());
         producto.setStock(dto.getStock());
+        asignarCategoria(producto, dto.getCategoriaId());
         return productoMapper.toResponse(productoRepository.save(producto));
     }
 
@@ -67,5 +78,13 @@ public class ProductoService {
     public Producto buscarOFallar(Long id) {
         return productoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Producto no encontrado con id: " + id));
+    }
+
+    private void asignarCategoria(Producto producto, Long categoriaId) {
+        if (categoriaId != null) {
+            CategoriaProducto cat = categoriaRepository.findById(categoriaId)
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Categoría no encontrada: " + categoriaId));
+            producto.setCategoria(cat);
+        }
     }
 }

@@ -5,6 +5,7 @@ import {
   filtrarProductos, getProductos, getCarrito, agregarItemCarrito,
   actualizarItemCarrito, eliminarItemCarrito, vaciarCarrito,
   crearPedido, cambiarEstadoPedido, procesarPago, iniciarCheckout,
+  getCategorias, getProductosPorCategoria,
 } from "../../api";
 import NavbarUsuario from "../../components/NavbarUsuario";
 
@@ -101,6 +102,8 @@ export default function Tienda() {
   const [busqueda, setBusqueda] = useState("");
   const [filtros, setFiltros] = useState({ precioMin: "", precioMax: "", soloConStock: false });
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [categorias, setCategorias] = useState([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null);
   const [vistaCarrito, setVistaCarrito] = useState(false);
   const [showPago, setShowPago] = useState(false);
   const [metodoPago, setMetodoPago] = useState("TARJETA_CREDITO");
@@ -113,6 +116,11 @@ export default function Tienda() {
 
   const cargarProductos = async () => {
     try {
+      if (categoriaSeleccionada) {
+        const r = await getProductosPorCategoria(categoriaSeleccionada);
+        setProductos(Array.isArray(r.data) ? r.data : []);
+        return;
+      }
       const params = {};
       if (busqueda)           params.nombre      = busqueda;
       if (filtros.precioMin)  params.precioMin   = filtros.precioMin;
@@ -130,13 +138,14 @@ export default function Tienda() {
   useEffect(() => {
     cargarProductos();
     if (clienteId) cargarCarrito();
+    getCategorias().then(r => setCategorias(Array.isArray(r.data) ? r.data : [])).catch(() => {});
   }, [clienteId]);
 
-  // Recarga con debounce cuando cambian filtros o búsqueda
+  // Recarga con debounce cuando cambian filtros, búsqueda o categoría
   useEffect(() => {
     const timer = setTimeout(() => cargarProductos(), 350);
     return () => clearTimeout(timer);
-  }, [busqueda, filtros.precioMin, filtros.precioMax, filtros.soloConStock]);const cargarCarrito = async () => {
+  }, [busqueda, filtros.precioMin, filtros.precioMax, filtros.soloConStock, categoriaSeleccionada]);const cargarCarrito = async () => {
     try {
       const r = await getCarrito(clienteId);
       setCarrito(r.data);
@@ -258,6 +267,37 @@ export default function Tienda() {
         <div style={s.layout}>
           {/* Catálogo */}
           <div style={{ flex: 1 }}>
+          {/* Filtros por categoría */}
+            {categorias.length > 0 && (
+              <div style={s.categoriaRow}>
+                <button
+                  onClick={() => setCategoriaSeleccionada(null)}
+                  style={{
+                    ...s.categoriaPill,
+                    background: categoriaSeleccionada === null ? "#38bdf8" : "#1e293b",
+                    color:      categoriaSeleccionada === null ? "#0f172a" : "#e2e8f0",
+                    border:     categoriaSeleccionada === null ? "1px solid #38bdf8" : "1px solid #334155",
+                    fontWeight: categoriaSeleccionada === null ? "bold" : "normal",
+                  }}>
+                  Todos
+                </button>
+                {categorias.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setCategoriaSeleccionada(cat.id)}
+                    style={{
+                      ...s.categoriaPill,
+                      background: categoriaSeleccionada === cat.id ? "#38bdf8" : "#1e293b",
+                      color:      categoriaSeleccionada === cat.id ? "#0f172a" : "#e2e8f0",
+                      border:     categoriaSeleccionada === cat.id ? "1px solid #38bdf8" : "1px solid #334155",
+                      fontWeight: categoriaSeleccionada === cat.id ? "bold" : "normal",
+                    }}>
+                    {cat.icono || "📦"} {cat.nombre}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Barra de búsqueda y filtros */}
             <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "center" }}>
               <input placeholder="🔍 Buscar productos..." value={busqueda}
@@ -664,4 +704,13 @@ const s = {
     background: "#0f172a", border: "1px solid #fbbf2433",
   },
   empty: { color: "#64748b", fontSize: 14, padding: "12px 0" },
+  categoriaRow: {
+    display: "flex", gap: 8, flexWrap: "nowrap", overflowX: "auto",
+    paddingBottom: 10, marginBottom: 12,
+    scrollbarWidth: "thin", scrollbarColor: "#334155 transparent",
+  },
+  categoriaPill: {
+    padding: "7px 16px", borderRadius: 20, fontSize: 13, cursor: "pointer",
+    whiteSpace: "nowrap", transition: "all .15s", flexShrink: 0,
+  },
 };

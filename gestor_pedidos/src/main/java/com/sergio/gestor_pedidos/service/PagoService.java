@@ -36,6 +36,7 @@ public class PagoService {
     private final PasarelaPagoService pasarelaPagoService;
     private final PedidoService pedidoService;
     private final PagoMapper pagoMapper;
+    private final NotificacionService notificacionService;
 
     @Transactional
     public PagoResponseDTO procesarPago(PagoRequestDTO dto) {
@@ -102,6 +103,12 @@ public class PagoService {
 
             // ── GENERAR FACTURA AUTOMATICAMENTE ─────────────────────────
             generarFacturaAutomatica(pago);
+
+            // ── NOTIFICAR AL CLIENTE ─────────────────────────────────────
+            notificacionService.notificarCliente(
+                    pedido.getCliente().getId(),
+                    "pago_completado",
+                    "Tu pago fue procesado exitosamente. Ref: " + resultado.referencia());
 
             log.info("Pago completado - pedido: {}, referencia: {}", pedido.getId(), resultado.referencia());
         } else {
@@ -194,6 +201,13 @@ public class PagoService {
         }
 
         log.info("Reembolso aprobado - pagoId: {}", pagoId);
+
+        // ── NOTIFICAR AL CLIENTE ─────────────────────────────────────────
+        notificacionService.notificarCliente(
+                pago.getPedido().getCliente().getId(),
+                "reembolso_aprobado",
+                "Tu reembolso ha sido aprobado y será procesado en breve.");
+
         return pagoMapper.toResponse(pago);
     }
 

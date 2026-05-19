@@ -10,7 +10,8 @@ import AdminProductos from "./pages/admin/AdminProductos";
 import AdminClientes  from "./pages/admin/AdminClientes";
 import AdminPedidos   from "./pages/admin/AdminPedidos";
 import AdminPagos     from "./pages/admin/AdminPagos";
-import AdminFacturas  from "./pages/admin/AdminFacturas";
+import AdminFacturas    from "./pages/admin/AdminFacturas";
+import AdminCategorias from "./pages/admin/AdminCategorias";
 
 // Usuario
 import Tienda      from "./pages/usuario/Tienda";
@@ -49,7 +50,8 @@ function AppRoutes() {
       <Route path="/admin/clientes"   element={<RequireAuth rol="ADMIN"><AdminClientes /></RequireAuth>} />
       <Route path="/admin/pedidos"    element={<RequireAuth rol="ADMIN"><AdminPedidos /></RequireAuth>} />
       <Route path="/admin/pagos"      element={<RequireAuth rol="ADMIN"><AdminPagos /></RequireAuth>} />
-      <Route path="/admin/facturas"   element={<RequireAuth rol="ADMIN"><AdminFacturas /></RequireAuth>} />
+      <Route path="/admin/facturas"    element={<RequireAuth rol="ADMIN"><AdminFacturas /></RequireAuth>} />
+      <Route path="/admin/categorias"  element={<RequireAuth rol="ADMIN"><AdminCategorias /></RequireAuth>} />
 
       {/* Usuario */}
       <Route path="/tienda"           element={<RequireAuth rol="USUARIO"><Tienda /></RequireAuth>} />

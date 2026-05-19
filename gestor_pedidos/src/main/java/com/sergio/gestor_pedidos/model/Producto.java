@@ -33,6 +33,11 @@ public class Producto {
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id",
+                foreignKey = @ForeignKey(name = "fk_producto_categoria"))
+    private CategoriaProducto categoria;
+
     @NotNull
     @DecimalMin("0.0")
     @Column(nullable = false, precision = 12, scale = 2)
