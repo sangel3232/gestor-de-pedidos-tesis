@@ -300,8 +300,7 @@ pipeline {
     // ── Post-pipeline ────────────────────────────────────────
     post {
         always {
-            echo "=== Limpiando workspace ==="
-            cleanWs()
+            echo "=== Fin del pipeline ==="
         }
         success {
             echo "✅ Pipeline completado exitosamente - Build #${BUILD_NUMBER}"
