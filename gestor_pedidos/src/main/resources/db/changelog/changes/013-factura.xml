@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="013-1" author="sergio" dbms="postgresql">
+        <comment>Crear tabla factura</comment>
+        <sql splitStatements="false">
+            CREATE TABLE IF NOT EXISTS factura (
+                id                   BIGSERIAL      PRIMARY KEY,
+                numero_factura       VARCHAR(30)    NOT NULL UNIQUE,
+                pago_id              BIGINT         NOT NULL UNIQUE,
+                cliente_nombre       VARCHAR(120)   NOT NULL,
+                cliente_email        VARCHAR(150)   NOT NULL,
+                cliente_ciudad       VARCHAR(100),
+                pedido_descripcion   VARCHAR(500)   NOT NULL,
+                subtotal             NUMERIC(12,2)  NOT NULL,
+                impuesto_porcentaje  NUMERIC(5,2)   NOT NULL DEFAULT 19.00,
+                impuesto_valor       NUMERIC(12,2)  NOT NULL,
+                total                NUMERIC(12,2)  NOT NULL,
+                metodo_pago          VARCHAR(30),
+                referencia_pago      VARCHAR(100),
+                ciudad_destino       VARCHAR(150),
+                direccion_entrega    VARCHAR(255),
+                estado               VARCHAR(20)    NOT NULL DEFAULT 'EMITIDA',
+                emitida_en           TIMESTAMP      NOT NULL DEFAULT NOW(),
+                CONSTRAINT fk_factura_pago FOREIGN KEY (pago_id) REFERENCES pago(id) ON DELETE RESTRICT
+            );
+        </sql>
+        <rollback>DROP TABLE IF EXISTS factura;</rollback>
+    </changeSet>
+
+    <changeSet id="013-2" author="sergio" dbms="postgresql">
+        <comment>Indices tabla factura</comment>
+        <sql splitStatements="false">
+            CREATE INDEX IF NOT EXISTS idx_factura_pago      ON factura(pago_id);
+            CREATE INDEX IF NOT EXISTS idx_factura_numero    ON factura(numero_factura);
+            CREATE INDEX IF NOT EXISTS idx_factura_emitida   ON factura(emitida_en DESC);
+        </sql>
+        <rollback>
+            DROP INDEX IF EXISTS idx_factura_pago;
+            DROP INDEX IF EXISTS idx_factura_numero;
+            DROP INDEX IF EXISTS idx_factura_emitida;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
