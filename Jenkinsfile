@@ -99,7 +99,7 @@ pipeline {
             steps {
                 echo "=== Construyendo imagenes Docker ==="
                 script {
-                    // Backend
+                    // Backend — usa el JAR ya compilado por Maven
                     dir("${BACKEND_DIR}") {
                         sh """
                             docker build \
@@ -114,7 +114,7 @@ pipeline {
                             ? 'https://api.gestor-pedidos.com'
                             : params.DEPLOY_ENV == 'qa'
                                 ? 'http://qa.gestor-pedidos.com:8081'
-                                : 'http://localhost:8080'
+                                : "http://${env.EC2_DEV_HOST ?: 'localhost'}:8080"
                         sh """
                             docker build \
                                 --build-arg VITE_API_BASE_URL=${apiUrl} \
