@@ -18,7 +18,7 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> filtrarPorPrecio(@Param("min") java.math.BigDecimal min, @Param("max") java.math.BigDecimal max);
 
     @Query("SELECT p FROM Producto p WHERE p.activo = true " +
-           "AND (:nombre IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%'))) " +
+           "AND (COALESCE(:nombre, '') = '' OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :nombre, '%'))) " +
            "AND (:precioMin IS NULL OR p.precio >= :precioMin) " +
            "AND (:precioMax IS NULL OR p.precio <= :precioMax) " +
            "AND (:soloConStock = false OR p.stock > 0)")

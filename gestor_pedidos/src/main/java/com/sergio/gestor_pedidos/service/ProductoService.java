@@ -51,6 +51,7 @@ public class ProductoService {
         Producto producto = buscarOFallar(id);
         producto.setNombre(dto.getNombre());
         producto.setDescripcion(dto.getDescripcion());
+        producto.setImagenUrl(dto.getImagenUrl());
         producto.setPrecio(dto.getPrecio());
         producto.setStock(dto.getStock());
         return productoMapper.toResponse(productoRepository.save(producto));
