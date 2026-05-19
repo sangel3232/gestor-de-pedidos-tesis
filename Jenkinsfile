@@ -21,7 +21,7 @@ pipeline {
     // ── Opciones del pipeline ────────────────────────────────
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        timeout(time: 60, unit: 'MINUTES')
+        timeout(time: 90, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
 
@@ -56,6 +56,7 @@ pipeline {
                 echo "=== Compilando Spring Boot ==="
                 dir("${BACKEND_DIR}") {
                     sh '''
+                        export MAVEN_OPTS="-Xmx512m -XX:MaxMetaspaceSize=256m"
                         mvn clean package \
                             -DskipTests=${SKIP_TESTS} \
                             -B \
