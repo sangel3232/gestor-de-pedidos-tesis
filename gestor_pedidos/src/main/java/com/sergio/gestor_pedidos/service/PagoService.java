@@ -8,6 +8,7 @@ import com.sergio.gestor_pedidos.exception.ReglaDeNegocioException;
 import com.sergio.gestor_pedidos.mapper.PagoMapper;
 import com.sergio.gestor_pedidos.model.*;
 import com.sergio.gestor_pedidos.repository.CarritoRepository;
+import com.sergio.gestor_pedidos.repository.FacturaRepository;
 import com.sergio.gestor_pedidos.repository.PagoRepository;
 import com.sergio.gestor_pedidos.repository.PedidoRepository;
 import com.sergio.gestor_pedidos.repository.ProductoRepository;
@@ -16,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,6 +32,7 @@ public class PagoService {
     private final PedidoRepository pedidoRepository;
     private final ProductoRepository productoRepository;
     private final CarritoRepository carritoRepository;
+    private final FacturaRepository facturaRepository;
     private final PasarelaPagoService pasarelaPagoService;
     private final PedidoService pedidoService;
     private final PagoMapper pagoMapper;
@@ -95,6 +99,9 @@ public class PagoService {
             CambioEstadoDTO cambio = new CambioEstadoDTO();
             cambio.setEstado(EstadoPedido.PAGADO);
             pedidoService.cambiarEstado(pedido.getId(), cambio);
+
+            // ── GENERAR FACTURA AUTOMATICAMENTE ─────────────────────────
+            generarFacturaAutomatica(pago);
 
             log.info("Pago completado - pedido: {}, referencia: {}", pedido.getId(), resultado.referencia());
         } else {
@@ -193,6 +200,46 @@ public class PagoService {
     private Pago buscarPago(Long id) {
         return pagoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pago no encontrado con id: " + id));
+    }
+
+    /** Genera la factura automáticamente al completarse el pago */
+    private void generarFacturaAutomatica(Pago pago) {
+        try {
+            if (facturaRepository.findByPagoId(pago.getId()).isPresent()) return;
+
+            Pedido pedido   = pago.getPedido();
+            Cliente cliente = pedido.getCliente();
+
+            BigDecimal IVA      = new BigDecimal("0.19");
+            BigDecimal total    = pago.getMonto();
+            BigDecimal subtotal = total.divide(BigDecimal.ONE.add(IVA), 2, RoundingMode.HALF_UP);
+            BigDecimal ivaValor = total.subtract(subtotal);
+
+            long consecutivo = facturaRepository.contarPorAnio(LocalDateTime.now().getYear()) + 1;
+            String numero = String.format("FAC-%d-%06d", LocalDateTime.now().getYear(), consecutivo);
+
+            Factura factura = Factura.builder()
+                    .numeroFactura(numero)
+                    .pago(pago)
+                    .clienteNombre(cliente.getNombre())
+                    .clienteEmail(cliente.getEmail())
+                    .clienteCiudad(cliente.getCiudad())
+                    .pedidoDescripcion(pedido.getDescripcion())
+                    .subtotal(subtotal)
+                    .impuestoPorcentaje(new BigDecimal("19.00"))
+                    .impuestoValor(ivaValor)
+                    .total(total)
+                    .metodoPago(pago.getMetodoPago() != null ? pago.getMetodoPago().name() : null)
+                    .referenciaPago(pago.getReferenciaExterna())
+                    .ciudadDestino(pedido.getCiudadDestino())
+                    .direccionEntrega(pedido.getDireccionEntrega())
+                    .build();
+
+            facturaRepository.save(factura);
+            log.info("Factura generada automáticamente: {} para pago: {}", numero, pago.getId());
+        } catch (Exception e) {
+            log.error("Error generando factura automática para pago {}: {}", pago.getId(), e.getMessage());
+        }
     }
 
     public PagoResponseDTO obtenerPorPedido(Long pedidoId) {

@@ -19,19 +19,19 @@
         <comment>Actualizar productos con imagenes de ejemplo (Unsplash)</comment>
         <sql splitStatements="false">
             UPDATE producto SET imagen_url = 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400'
-            WHERE nombre ILIKE '%laptop%' AND imagen_url IS NULL;
+            WHERE nombre ILIKE '%laptop%';
 
             UPDATE producto SET imagen_url = 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400'
-            WHERE nombre ILIKE '%mouse%' AND imagen_url IS NULL;
+            WHERE nombre ILIKE '%mouse%';
 
             UPDATE producto SET imagen_url = 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400'
-            WHERE nombre ILIKE '%teclado%' AND imagen_url IS NULL;
+            WHERE nombre ILIKE '%teclado%';
 
             UPDATE producto SET imagen_url = 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=400'
-            WHERE nombre ILIKE '%monitor%' AND imagen_url IS NULL;
+            WHERE nombre ILIKE '%monitor%';
 
             UPDATE producto SET imagen_url = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400'
-            WHERE nombre ILIKE '%auricular%' AND imagen_url IS NULL;
+            WHERE nombre ILIKE '%auricular%';
 
             UPDATE producto SET imagen_url = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400'
             WHERE imagen_url IS NULL;
