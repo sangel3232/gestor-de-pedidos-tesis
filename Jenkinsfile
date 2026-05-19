@@ -161,16 +161,16 @@ pipeline {
                 echo "=== Desplegando en DEV (local) ==="
                 sh """
                     # Crear directorio de despliegue
-                    mkdir -p /home/ubuntu/gestor-pedidos
+                    mkdir -p /opt/gestor-pedidos
 
                     # Copiar archivo de entorno
-                    cp ${BACKEND_DIR}/.env.dev /home/ubuntu/gestor-pedidos/.env
+                    cp ${BACKEND_DIR}/.env.dev /opt/gestor-pedidos/.env
 
                     # Copiar docker-compose
-                    cp ${BACKEND_DIR}/docker-compose.dev.yml /home/ubuntu/gestor-pedidos/docker-compose.yml
+                    cp ${BACKEND_DIR}/docker-compose.dev.yml /opt/gestor-pedidos/docker-compose.yml
 
                     # Desplegar con docker compose
-                    cd /home/ubuntu/gestor-pedidos
+                    cd /opt/gestor-pedidos
                     export IMAGE_TAG=${IMAGE_TAG}
                     export DOCKER_REGISTRY=${DOCKER_REGISTRY}
                     docker compose -f docker-compose.yml --env-file .env pull || true
