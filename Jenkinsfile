@@ -160,21 +160,25 @@ pipeline {
             steps {
                 echo "=== Desplegando en DEV (local) ==="
                 sh """
-                    # Crear directorio de despliegue
                     mkdir -p /opt/gestor-pedidos
-
-                    # Copiar archivo de entorno
                     cp ${BACKEND_DIR}/.env.dev /opt/gestor-pedidos/.env
-
-                    # Copiar docker-compose
                     cp ${BACKEND_DIR}/docker-compose.dev.yml /opt/gestor-pedidos/docker-compose.yml
 
-                    # Desplegar con docker compose
                     cd /opt/gestor-pedidos
-                    export IMAGE_TAG=${IMAGE_TAG}
-                    export DOCKER_REGISTRY=${DOCKER_REGISTRY}
-                    docker compose -f docker-compose.yml --env-file .env pull || true
-                    docker compose -f docker-compose.yml --env-file .env up -d --remove-orphans
+
+                    # Inyectar variables en el .env
+                    echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+                    echo "DOCKER_REGISTRY=${DOCKER_REGISTRY}" >> .env
+
+                    # Detener contenedores anteriores si existen
+                    docker-compose -f docker-compose.yml down --remove-orphans || true
+
+                    # Descargar nuevas imagenes
+                    docker-compose -f docker-compose.yml pull || true
+
+                    # Levantar servicios
+                    docker-compose -f docker-compose.yml up -d
+
                     docker system prune -f || true
 
                     echo "=== Contenedores corriendo ==="
