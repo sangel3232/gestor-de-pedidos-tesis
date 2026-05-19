@@ -40,6 +40,12 @@ public class ProductoService {
                 .map(productoMapper::toResponse).toList();
     }
 
+    public List<ProductoResponseDTO> filtrar(String nombre, java.math.BigDecimal precioMin,
+                                              java.math.BigDecimal precioMax, boolean soloConStock) {
+        return productoRepository.filtrar(nombre, precioMin, precioMax, soloConStock).stream()
+                .map(productoMapper::toResponse).toList();
+    }
+
     @Transactional
     public ProductoResponseDTO actualizar(Long id, ProductoRequestDTO dto) {
         Producto producto = buscarOFallar(id);

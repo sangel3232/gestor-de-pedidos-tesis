@@ -38,6 +38,15 @@ public class ProductoController {
         return productoService.buscarPorNombre(nombre);
     }
 
+    @GetMapping("/filtrar")
+    public List<ProductoResponseDTO> filtrar(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) java.math.BigDecimal precioMin,
+            @RequestParam(required = false) java.math.BigDecimal precioMax,
+            @RequestParam(defaultValue = "false") boolean soloConStock) {
+        return productoService.filtrar(nombre, precioMin, precioMax, soloConStock);
+    }
+
     @PutMapping("/{id}")
     public ProductoResponseDTO actualizar(@PathVariable Long id, @Valid @RequestBody ProductoRequestDTO dto) {
         return productoService.actualizar(id, dto);
