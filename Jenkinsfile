@@ -158,28 +158,34 @@ pipeline {
                 }
             }
             steps {
-                echo "=== Desplegando en DEV ==="
-                withCredentials([
-                    sshUserPrivateKey(credentialsId: 'aws-ec2-dev-key', keyFileVariable: 'SSH_KEY'),
-                    string(credentialsId: 'ec2-dev-host', variable: 'EC2_HOST')
-                ]) {
-                    sh """
-                        scp -i ${SSH_KEY} -o StrictHostKeyChecking=no \
-                            ${BACKEND_DIR}/.env.dev ubuntu@${EC2_HOST}:/home/ubuntu/gestor-pedidos/.env
+                echo "=== Desplegando en DEV (local) ==="
+                sh """
+                    # Crear directorio de despliegue
+                    mkdir -p /home/ubuntu/gestor-pedidos
 
-                        ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} '
-                            cd /home/ubuntu/gestor-pedidos
-                            export IMAGE_TAG=${IMAGE_TAG}
-                            docker-compose -f docker-compose.dev.yml --env-file .env pull
-                            docker-compose -f docker-compose.dev.yml --env-file .env up -d --remove-orphans
-                            docker system prune -f
-                        '
-                    """
-                }
+                    # Copiar archivo de entorno
+                    cp ${BACKEND_DIR}/.env.dev /home/ubuntu/gestor-pedidos/.env
+
+                    # Copiar docker-compose
+                    cp ${BACKEND_DIR}/docker-compose.dev.yml /home/ubuntu/gestor-pedidos/docker-compose.yml
+
+                    # Desplegar con docker compose
+                    cd /home/ubuntu/gestor-pedidos
+                    export IMAGE_TAG=${IMAGE_TAG}
+                    export DOCKER_REGISTRY=${DOCKER_REGISTRY}
+                    docker compose -f docker-compose.yml --env-file .env pull || true
+                    docker compose -f docker-compose.yml --env-file .env up -d --remove-orphans
+                    docker system prune -f || true
+
+                    echo "=== Contenedores corriendo ==="
+                    docker ps
+                """
             }
             post {
                 success {
-                    echo "✅ DEV desplegado exitosamente - Build #${BUILD_NUMBER}"
+                    echo "✅ DEV desplegado - Build #${BUILD_NUMBER}"
+                    echo "🌐 Frontend: http://3.129.13.116:5173"
+                    echo "🔧 Backend:  http://3.129.13.116:8080"
                 }
             }
         }
