@@ -264,9 +264,9 @@ export default function Tienda() {
           </button>
         </div>
 
-        <div style={s.layout}>
+        <div className="tienda-layout" style={s.layout}>
           {/* Catálogo */}
-          <div style={{ flex: 1 }}>
+          <div className="tienda-catalogo" style={{ flex: 1, minWidth: 0 }}>
           {/* Filtros por categoría */}
             {categorias.length > 0 && (
               <div style={s.categoriaRow}>
@@ -340,7 +340,7 @@ export default function Tienda() {
               )}
             </AnimatePresence>
 
-            <div style={s.grid}>
+            <div className="tienda-grid" style={s.grid}>
               {productos.map((p) => (
                 <motion.div key={p.id} style={s.productoCard}
                   whileHover={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}
@@ -387,7 +387,7 @@ export default function Tienda() {
           {/* Panel carrito */}
           <AnimatePresence>
             {vistaCarrito && (
-              <motion.div style={s.carritoPanel}
+              <motion.div className="tienda-carrito-panel" style={s.carritoPanel}
                 initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}>
                 <div style={s.carritoPanelHeader}>
                   <h3 style={s.carritoTitle}>🛒 Mi Carrito</h3>
