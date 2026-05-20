@@ -113,7 +113,7 @@ pipeline {
                         def apiUrl = params.DEPLOY_ENV == 'release'
                             ? 'https://api.gestor-pedidos.com'
                             : params.DEPLOY_ENV == 'qa'
-                                ? 'http://3.129.13.116:8082'
+                                ? 'http://18.223.119.161:8082'
                                 : 'http://3.129.13.116:8081'
                         sh """
                             docker build \
