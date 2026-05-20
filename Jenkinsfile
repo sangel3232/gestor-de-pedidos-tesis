@@ -224,26 +224,39 @@ pipeline {
             steps {
                 echo "=== Desplegando en QA ==="
                 withCredentials([
-                    sshUserPrivateKey(credentialsId: 'aws-ec2-qa-key', keyFileVariable: 'SSH_KEY'),
                     string(credentialsId: 'ec2-qa-host', variable: 'EC2_HOST')
                 ]) {
                     sh """
-                        scp -i ${SSH_KEY} -o StrictHostKeyChecking=no \
-                            ${BACKEND_DIR}/.env.qa ubuntu@${EC2_HOST}:/home/ubuntu/gestor-pedidos/.env
+                        SSH_KEY=/var/lib/jenkins/.ssh/jenkins-key.pem
 
-                        ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} '
-                            cd /home/ubuntu/gestor-pedidos
-                            export IMAGE_TAG=${IMAGE_TAG}
-                            docker-compose -f docker-compose.qa.yml --env-file .env pull
-                            docker-compose -f docker-compose.qa.yml --env-file .env up -d --remove-orphans
-                            docker system prune -f
+                        # Crear directorio en QA
+                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} 'mkdir -p /opt/gestor-pedidos'
+
+                        # Copiar archivos
+                        scp -i \$SSH_KEY -o StrictHostKeyChecking=no \
+                            ${BACKEND_DIR}/.env.qa ubuntu@${EC2_HOST}:/opt/gestor-pedidos/.env
+                        scp -i \$SSH_KEY -o StrictHostKeyChecking=no \
+                            ${BACKEND_DIR}/docker-compose.qa.yml ubuntu@${EC2_HOST}:/opt/gestor-pedidos/docker-compose.yml
+
+                        # Desplegar
+                        ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ubuntu@${EC2_HOST} '
+                            cd /opt/gestor-pedidos
+                            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+                            echo "DOCKER_REGISTRY=${DOCKER_REGISTRY}" >> .env
+                            docker-compose -f docker-compose.yml down --remove-orphans || true
+                            docker-compose -f docker-compose.yml pull || true
+                            docker-compose -f docker-compose.yml up -d
+                            docker system prune -f || true
+                            docker ps
                         '
                     """
                 }
             }
             post {
                 success {
-                    echo "✅ QA desplegado exitosamente - Build #${BUILD_NUMBER}"
+                    echo "✅ QA desplegado - Build #${BUILD_NUMBER}"
+                    echo "🌐 Frontend QA: http://18.223.119.161:5175"
+                    echo "🔧 Backend QA:  http://18.223.119.161:8082"
                 }
             }
         }
